@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FlashFocus</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f4fb;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #7d6dd3;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    nav {
+      margin-top: 10px;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    nav button {
+      background-color: #7d6dd3;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    nav button:hover {
+      background-color: #5c50b5;
+      transform: translateY(-2px);
+    }
+    main {
+      padding: 40px 20px;
+    }
+    .section {
+      display: none;
+      margin-bottom: 40px;
+      background-color: #ffffff;
+      border-radius: 20px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
+      padding: 30px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .active {
+      display: block;
+    }
+    .form-section h2 {
+      text-align: center;
+      color: #5c50b5;
+      margin-bottom: 20px;
+    }
+    input, textarea {
+      padding: 12px;
+      margin-top: 10px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      width: 100%;
+      font-size: 16px;
+    }
+    .btn {
+      background-color: #7d6dd3;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s ease;
+      margin-top: 10px;
+    }
+    .btn:hover {
+      background-color: #5c50b5;
+    }
+    .card-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+    }
+    .flashcard {
+      background: linear-gradient(145deg, #f0efff, #ffffff);
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+      width: 250px;
+      transition: transform 0.3s ease;
+      position: relative;
+    }
+    .flashcard:hover {
+      transform: scale(1.03);
+    }
+    .flashcard h3 {
+      margin: 0 0 10px 0;
+      font-size: 18px;
+      color: #3b2e7a;
+    }
+    .flashcard p {
+      margin: 5px 0;
+      color: #555;
+    }
+    .delete-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #e74c3c;
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 12px;
+      transition: background 0.3s ease;
+    }
+    .delete-btn:hover {
+      background: #c0392b;
+    }
+    ul {
+      padding-left: 20px;
+    }
+    li {
+      margin-bottom: 10px;
+    }
+    #quiz-box {
+      text-align: center;
+    }
+    #quiz-box input {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>FlashFocus - Smart Flashcards</h1>
+    <nav>
+      <button onclick="showSection('add')">Add Flashcard</button>
+      <button onclick="showSection('quiz')">Quiz</button>
+      <button onclick="showSection('mistakes')">Mistakes</button>
+      <button onclick="showSection('all')">All Flashcards</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Add Flashcard Section -->
+    <div id="add" class="section active form-section">
+      <h2>Add a Flashcard</h2>
+      <input type="text" id="question" placeholder="Enter question" />
+      <input type="text" id="answer" placeholder="Enter answer" />
+      <input type="text" id="hint" placeholder="Optional hint" />
+      <input type="text" id="difficulty" placeholder="Difficulty (Easy/Medium/Hard)" />
+      <button class="btn" onclick="addFlashcard()">Add</button>
+    </div>
+
+    <!-- Quiz Section -->
+    <div id="quiz" class="section form-section">
+      <h2>Quiz</h2>
+      <button class="btn" onclick="startQuiz()">Start Quiz</button>
+      <div id="quiz-box"></div>
+    </div>
+
+    <!-- Mistakes Section -->
+    <div id="mistakes" class="section form-section">
+      <h2>Mistakes</h2>
+      <button class="btn" onclick="loadMistakes()">View Mistakes</button>
+      <ul id="mistake-list"></ul>
+    </div>
+
+    <!-- All Flashcards Section -->
+    <div id="all" class="section form-section">
+      <h2>All Flashcards</h2>
+      <div id="flashcards" class="card-container"></div>
+    </div>
+  </main>
+
+  <script>
+    // Show the selected section and hide others
+    function showSection(id) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      if (id === 'all') loadFlashcards();
+      if (id === 'mistakes') {
+        document.getElementById("mistake-list").innerHTML = '';
+      }
+      if (id === 'quiz') {
+        document.getElementById('quiz-box').innerHTML = '';
+      }
+    }
+
+    // Load all flashcards from backend and show
+    async function loadFlashcards() {
+      try {
+        const res = await fetch("http://127.0.0.1:5000/flashcards");
+        if (!res.ok) throw new Error('Failed to fetch flashcards');
+        const data = await res.json();
+        const container = document.getElementById("flashcards");
+        container.innerHTML = "";
+        if(data.length === 0){
+          container.innerHTML = "<p>No flashcards found. Add some!</p>";
+          return;
+        }
+        data.forEach(card => {
+          const cardElem = document.createElement('div');
+          cardElem.className = 'flashcard';
+          cardElem.innerHTML = `
+            <h3>Q: ${card.question}</h3>
+            <p><strong>Hint:</strong> ${card.hint || "None"}</p>
+            <p><strong>Difficulty:</strong> ${card.difficulty}</p>
+            <button class="delete-btn" onclick="confirmDelete('${card._id}')">Delete</button>
+          `;
+          container.appendChild(cardElem);
+        });
+      } catch (error) {
+        alert('Error loading flashcards. Make sure your backend is running.');
+      }
+    }
+
+    // Confirm delete popup
+    function confirmDelete(id) {
+      if(confirm("Are you sure you want to delete this flashcard?")){
+        deleteFlashcard(id);
+      }
+    }
+
+    // Delete flashcard by ID
+    async function deleteFlashcard(id) {
+      try {
+        const res = await fetch(`http://127.0.0.1:5000/flashcards/${id}`, { method: 'DELETE' });
+        if(!res.ok) throw new Error('Delete failed');
+        alert('Flashcard deleted successfully!');
+        loadFlashcards();
+      } catch {
+        alert('Failed to delete flashcard. Is your backend running?');
+      }
+    }
+
+    // Add flashcard function with validation and popup alerts
+    async function addFlashcard() {
+      const question = document.getElementById("question").value.trim();
+      const answer = document.getElementById("answer").value.trim();
+      const hint = document.getElementById("hint").value.trim();
+      const difficulty = document.getElementById("difficulty").value.trim();
+
+      if (!question || !answer || !difficulty) {
+        alert("Please fill in the question, answer, and difficulty fields.");
+        return;
+      }
+
+      try {
+        const res = await fetch("http://127.0.0.1:5000/flashcards", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question, answer, hint, difficulty })
+        });
+        if (!res.ok) throw new Error("Failed to add");
+
+        alert("Flashcard added successfully!");
+        // Clear inputs
+        document.getElementById("question").value = "";
+        document.getElementById("answer").value = "";
+        document.getElementById("hint").value = "";
+        document.getElementById("difficulty").value = "";
+
+        // Automatically show all flashcards after adding new one
+        showSection('all');
+      } catch {
+        alert("Error adding flashcard. Check your backend.");
+      }
+    }
+
+    // Start the quiz by fetching one flashcard
+    async function startQuiz() {
+      try {
+        const res = await fetch("http://127.0.0.1:5000/quiz");
+        if (!res.ok) {
+          alert("No flashcards available for quiz. Add some first!");
+          return;
+        }
+        const data = await res.json();
+
+        document.getElementById("quiz-box").innerHTML = `
+          <div class="flashcard">
+            <h3>${data.question}</h3>
+            <input type="text" id="user-answer" placeholder="Your answer" autocomplete="off" />
+            <button class="btn" onclick="submitAnswer('${data._id}', '${data.answer}')">Submit</button>
+            <p id="quiz-feedback" style="margin-top:15px; font-weight:bold;"></p>
+          </div>
+        `;
+      } catch {
+        alert("Error starting quiz. Check backend.");
+      }
+    }
+
+   // Submit answer to backend and show feedback
+async function submitAnswer(id, correctAnswer) {
+  const userAnswerElem = document.getElementById("user-answer");
+  const feedbackElem = document.getElementById("quiz-feedback");
+  const userAnswer = userAnswerElem.value.trim();
+
+  if (!userAnswer) {
+    alert("Please enter your answer.");
+    return;
+  }
+
+  try {
+    const res = await fetch("http://127.0.0.1:5000/answer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, answer: userAnswer })
+    });
+    const data = await res.json();
+
+    if (data.correct) {
+      feedbackElem.style.color = 'green';
+      feedbackElem.textContent = "Correct! 🎉";
+    } else {
+      feedbackElem.style.color = 'red';
+      feedbackElem.textContent = `Wrong. Correct answer: ${data.correct_answer}`;
+    }
+  } catch {
+    alert("Error submitting answer. Check backend.");
+  }
+}
+
+
+    // Load mistakes flashcard IDs and show
+   // Load mistakes flashcard IDs and show
+async function loadMistakes() {
+  try {
+    const res = await fetch("http://127.0.0.1:5000/mistakes");
+    if (!res.ok) throw new Error('Failed to load mistakes');
+
+    const data = await res.json();
+    const list = document.getElementById("mistake-list");
+    list.innerHTML = "";
+
+    if (data.length === 0) {
+      list.innerHTML = "<li>No mistakes recorded yet.</li>";
+      return;
+    }
+
+    data.forEach(id => {
+      const li = document.createElement("li");
+      li.textContent = `Flashcard ID: ${id}`;
+      list.appendChild(li);
+    });
+  } catch {
+    alert("Error loading mistakes. Check backend.");
+  }
+}
+
+
+    // Initially load all flashcards on page load in the "All Flashcards" section
+    loadFlashcards();
+  </script>
+</body>
+</html>
